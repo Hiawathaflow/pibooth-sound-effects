@@ -48,10 +48,20 @@ def pibooth_reset(cfg, hard):
 @pibooth.hookimpl
 def pibooth_startup(app, cfg):
     """Init the pygame mixer and load available sounds"""
-    pygame.mixer.pre_init(channels=2, buffer=1024)
+    # pibooth calls pygame.init() before the plugins run, which already starts
+    # the mixer with its defaults and makes pre_init()/init() here a no-op.
+    # Shut it down first so the settings below really apply.
+    if pygame.mixer.get_init():
+        pygame.mixer.quit()
+    # 1024 frames underrun (crackling) while the application draws a preview
+    pygame.mixer.pre_init(frequency=48000, size=-16, channels=2, buffer=4096)
     pygame.mixer.init()
+    LOGGER.info("Sound mixer initialized: %s", pygame.mixer.get_init())
 
-    one_second_bytes_length = 4 * 44100
+    # Derive the frame size from the mixer instead of assuming 44.1 kHz
+    # stereo, else the generated countdown is out of step with the samples.
+    frequency, sample_size, channels = pygame.mixer.get_init()
+    one_second_bytes_length = frequency * channels * abs(sample_size) // 8
     app.sounds = {}
     sounds_file_list = os.listdir(cfg.getpath('SOUNDS', 'sounds_path'))
     for sound in sounds_file_list:
