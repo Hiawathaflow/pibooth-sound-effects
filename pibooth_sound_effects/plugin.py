@@ -30,6 +30,9 @@ def pibooth_configure(cfg):
     """Declare the new configuration options"""
     cfg.add_option('SOUNDS', 'sounds_path', "~/.config/pibooth/sounds",
                    "Path to the sounds folder")
+    cfg.add_option('CAMERA', 'capture_sound', False,
+                   "Play the 'capture' sound when the picture is taken (a DSLR makes its own noise)",
+                   "Capture sound", ['True', 'False'])
 
 
 @pibooth.hookimpl
@@ -140,10 +143,11 @@ def state_preview_enter(app):
 
 
 @pibooth.hookimpl
-def state_capture_enter(app):
+def state_capture_enter(app, cfg):
     """Actions performed when application enter in Capture state.
     """
-    handle_sounds(app, "capture")
+    if cfg.getboolean('CAMERA', 'capture_sound'):
+        handle_sounds(app, "capture")
 
 # --- Processing State ---------------------------------------------------------
 
